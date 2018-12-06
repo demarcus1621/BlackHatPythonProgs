@@ -1,7 +1,7 @@
 import socket
 
-target_host = "www.google.com"
-target_port = 80
+target_host = "127.0.0.1"
+target_port = 9999
 
 #Assumes that target server expects a request before it
 #sends a response
@@ -16,7 +16,7 @@ client.connect(( target_host, target_port ))
 
 #send data through HTTP request
 #This is a bit different from the book, as Python3 requires a byte string
-client.send(b"GET / HTTP/1.1\r\nHost: google.com\r\n\r\n")
+client.send(b"TEST")
 
 #receive response
 response = client.recv(4096)
