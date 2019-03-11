@@ -31,13 +31,12 @@ def help():
 	
 def client_sender(buffer):
 	client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	
+
 	try:
 		#connect to target
-		print("1")
-		print(buffer)
+		print("Attempting to connect to " + str(target) + ":" + str(port))
 		client.connect((target,port))
-		print("2")
+		print("pre2")
 		if len(buffer):
 			print("2")
 			client.send(buffer)
@@ -54,9 +53,10 @@ def client_sender(buffer):
 				print("4")
 				if recv_len < 4096:
 					break
-			print(response)
+			print(response,)
 			#wait for more input
-			buffer = input().encode()
+			#buffer = input().encode()
+			buffer = raw_input("")
 			buffer += "\n"
 			#send it
 			client.send(buffer)
@@ -68,13 +68,15 @@ def client_sender(buffer):
 		
 def server_loop():
 	global target
-
+	global port
+	
 	#if no target, listen on all interfaces
 	if not len(target):
 		target = "0.0.0.0"
 	server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	server.bind((target, port))
 	server.listen(5)
+	print("Listening on " + str(target) + ":" + str(port))
 	
 	while True:
 		client_socket, addr = server.accept()
@@ -125,25 +127,25 @@ def client_handler(client_socket):
 			client_socket.send("Failed to save file to %s\r\n" %upload_destination)
 		
 		#check for command execution
-		if len(execute):
-			#run command
-			output = run_command(execute)
+	if len(execute):
+		#run command
+		output = run_command(execute)
 			
-			client_socket.send(output)
+		client_socket.send(output)
 			
-		#enter another loop if a shell was requested
-		if command:
-			while True:
-				#display prompt
-				client_socket.send("netcat:$ ")
-				#wait until we get a \n <ENTER>
-				cmd_buffer = ""
-				while "\n" not in cmd_buffer:
-					cmd_buffer += client_socket.recv(1024)	
-				#send back output
-				response = run_command(cmd_buffer)
-				#send response
-				client_socket.send(response)
+	#enter another loop if a shell was requested
+	if command:
+		while True:
+			#display prompt
+			client_socket.send("netcat:$ ")
+			#wait until we get a \n <ENTER>
+			cmd_buffer = ""
+			while "\n" not in cmd_buffer:
+				cmd_buffer += client_socket.recv(1024)	
+			#send back output
+			response = run_command(cmd_buffer)
+			#send response
+			client_socket.send(response)
 				
 					
 	
@@ -159,8 +161,7 @@ def main():
 		help()
 	
 	try:
-		opts, args = getopt.getopt(sys.argv[1:], "hle:t:p:cu:",
-		["help","listen","execute","target","port","command","upload"])
+		opts, args = getopt.getopt(sys.argv[1:], "hle:t:p:cu:",["help","listen","execute","target","port","command","upload"])
 	except getopt.GetoptError as err:
 		print(str(err))
 		help()
@@ -172,7 +173,7 @@ def main():
 			listen = True
 		elif o in ("-e", "--execute"):
 			execute = a
-		elif o in ("-c", "--commandshell", "--command"):
+		elif o in ("-c", "--commandshell"):
 			command = True
 		elif o in ("-u", "--upload"):
 			upload_destination = a
@@ -181,17 +182,15 @@ def main():
 		elif o in ("-p", "--port"):
 			port = int(a)
 		else:
-			assert(False, "Unhandled Option")
+			assert False, "Unhandled Option"
 			
 		#Interfacing with stdin?
 		if not listen and len(target) and port > 0:
 			'''read in buffer from cmd line,
 			this will block, so CTRL-D if not sending input
 			to stdin'''
-			'''The book uses the line below, but for some reason it is not
-			working while im debugging
-			buffer = sys.stdin.read()'''
-			buffer = input().encode()
+			'''This only works in UNIX env, so run in subsystem'''
+			buffer = sys.stdin.read()
 			#send data
 			client_sender(buffer)
 		''' listen and potentially upload things, execute commands, and drop
